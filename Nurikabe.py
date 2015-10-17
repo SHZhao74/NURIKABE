@@ -18,7 +18,9 @@
 import pygame
 import sys
 import random
+from multiprocessing import Process
 
+BOARD_SIZE = 5
 class PyGameBoard():
   """Represents the game's frontend using pygame"""
   def __init__(self, engine, windowSize, gridValues):
@@ -27,108 +29,23 @@ class PyGameBoard():
     self.__engine = engine
     self.__gridValues = gridValues
     self.__screen = pygame.display.set_mode(windowSize)
-    background = pygame.image.load('background.png').convert()
-    board = pygame.image.load('board.png')
-    boardX = boardY = 10 
-    self.__screen.blit(background, (0,0))
-    self.__screen.blit(board, (boardX, boardY))
-    self.__tiles = self.__createTiles(boardX, boardY)
-    self.__drawUI()
-    self.__draw() 
+    background = pygame.image.load('55.png').convert()
+    self.__tiles = self.__createTiles(12,12)
+    
+    self.__draw()
 
   def __draw(self):
     """Handles events and updates display buffer"""
+    
     while True:
       for event in pygame.event.get():
         if event.type == pygame.QUIT:
           sys.exit() 
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-          self.__handleMouse(event.pos)
-        elif (event.type == pygame.KEYUP):
-          self.__handleKeyboard(event.key)
+      self.__tiles[3][2].toBlack()
       pygame.display.flip()
 
-  def __drawUI(self):
-    '''Draws the text buttons along the right panel'''
-    font = pygame.font.Font(None, 38)
-    font.set_underline(True)
-    self.__titleText = font.render('Sudoku', 1, (0, 0, 0))
-    self.__titleTextRect = self.__titleText.get_rect()
-    self.__titleTextRect.centerx = 445
-    self.__titleTextRect.centery = 30
-    self.__screen.blit(self.__titleText, self.__titleTextRect)
-
-    font = pygame.font.Font(None, 18)
-    self.__titleText = font.render('paul bourke 2010', 1, (0, 0, 0))
-    self.__titleTextRect = self.__titleText.get_rect()
-    self.__titleTextRect.centerx = 445
-    self.__titleTextRect.centery = 55 
-    self.__screen.blit(self.__titleText, self.__titleTextRect)
-
-    font = pygame.font.Font('gunny.ttf', 30)
-    self.__newGameText = font.render('-New Game-', 1, (0, 0, 0))
-    self.__newGameTextRect = self.__newGameText.get_rect()
-    self.__newGameTextRect.centerx = 495 
-    self.__newGameTextRect.centery = 180
-    self.__screen.blit(self.__newGameText, self.__newGameTextRect)
-
-    self.__solveText = font.render('-Solve-', 1, (0, 0, 0))
-    self.__solveTextRect = self.__solveText.get_rect()
-    self.__solveTextRect.centerx = 495
-    self.__solveTextRect.centery = 220
-    self.__screen.blit(self.__solveText, self.__solveTextRect)
-
-    font = pygame.font.Font('gunny.ttf', 30)
-    self.__checkText = font.render('-Check Solution-', 1, (0, 0, 0))
-    self.__checkTextRect = self.__checkText.get_rect()
-    self.__checkTextRect.centerx = 495
-    self.__checkTextRect.centery = 260 
-    self.__screen.blit(self.__checkText, self.__checkTextRect)
-
-  def __handleKeyboard(self, key):
-    """Get key pressed and update the game board"""
-    validKeys = { pygame.K_0 : "0", pygame.K_1 : "1", pygame.K_2 : "2",
-                 pygame.K_3 : "3", pygame.K_4 : "4", pygame.K_5 : "5",
-                 pygame.K_6 : "6", pygame.K_7 : "7", pygame.K_8 : "8",
-                 pygame.K_9 : "9", pygame.K_BACKSPACE : "", pygame.K_DELETE : "" }
-    if key == pygame.K_ESCAPE:
-      sys.exit()
-    elif key in validKeys:
-      i = self.__currentTile.getGridLoc()[0]
-      j = self.__currentTile.getGridLoc()[1]
-      self.__currentTile.setFontColor(pygame.color.THECOLORS['blue'])
-      self.__currentTile.updateValue(validKeys[key])
-      self.__gridValues[i][j] = self.__currentTile.getValue()
-
-  def __handleMouse(self, (x,y)):
-    for row in self.__tiles:
-      for tile in row:
-        if tile.getRect().collidepoint(x,y):
-          if not tile.isReadOnly():
-            tile.highlight(pygame.color.THECOLORS['lightyellow'])
-            if self.__currentTile.isCorrect():
-               self.__currentTile.unhighlight()
-            else:
-              self.__currentTile.highlight((255,164,164))
-            self.__currentTile = tile
-    if self.__newGameTextRect.collidepoint(x,y):
-      self.__engine.startNewGame()
-    elif self.__solveTextRect.collidepoint(x,y):
-      linePuzzle = self.__engine.gridToLine(self.__gridValues)
-      linePuzzle = self.__engine.getSolution()
-      self.__updateBoard(self.__engine.lineToGrid(linePuzzle))
-      self.__unhightlightBoard()
-    elif self.__checkTextRect.collidepoint(x,y):
-      ret = self.__engine.checkSolution(self.__gridValues)
-      ret = self.__engine.lineToGrid(ret)
-      for i in range(9):
-        for j in range(9):
-          self.__tiles[i][j].setCorrect(ret[i][j])
-          if ret[i][j] is False:
-            self.__tiles[i][j].highlight((255,164,164))
-          else:
-            self.__tiles[i][j].unhighlight()
-            
+ 
+       
   def __updateBoard(self, gridValues):
     for i in range(9):
       for j in range(9):
@@ -142,24 +59,14 @@ class PyGameBoard():
   def __createTiles(self, initX=0, initY=0):
     """Set up a list of tiles corresponding to the grid, along with
        each ones location coordinates on the board"""
-    square_size = 40
+    square_size = 90
     tiles = list()
     x = y = 0
-    for i in range(0,9):
+    for i in range(0,BOARD_SIZE):
       row = list()
-      for j in range(0,9):
-        if j in (0, 1, 2):  
-          x = (j * 41) + (initX + 2)
-        if j in (3, 4, 5):  
-          x = (j * 41) + (initX + 6)
-        if j in (6, 7, 8):  
-          x = (j * 41) + (initX + 10)
-        if i in (0, 1, 2):  
-          y = (i * 41) + (initY + 2)
-        if i in (3, 4, 5):  
-          y = (i * 41) + (initY + 6)
-        if i in (6, 7, 8):   
-          y = (i * 41) + (initY + 10)
+      for j in range(0,BOARD_SIZE):  
+        x = (j * 96) + initX
+        y = (i * 96) + initY
         tile = Tile(self.__gridValues[i][j], (x, y), (i, j), square_size)
         row.append(tile)
       tiles.append(row)
@@ -186,6 +93,9 @@ class Tile():
       self.__readOnly = True 
     self.__draw()
   
+  def toBlack(self):
+    self.__colorSquare.fill(pygame.color.THECOLORS['black'], None, pygame.BLEND_RGB_ADD)
+    self.__draw()
   def updateValue(self, value):
     self.__value = value
     self.__draw() 
@@ -225,7 +135,7 @@ class Tile():
     value = self.__value
     if self.__value == '-': 
       value = ''
-    font = pygame.font.Font('gunny.ttf', 30)
+    font = pygame.font.Font('Monaco.ttf', 60)
     text = font.render(str(value), 1, self.__fontColor)
     textpos = text.get_rect()
     textpos.centerx = self.__rect.centerx
@@ -242,19 +152,23 @@ class Sudoku:
   def startNewGame(self):
     self.__linePuzzle = self.__loadPuzzle(self.__puzzleFile)
     gridValues = self.lineToGrid(self.__linePuzzle)
+    board = Process(target=PyGameBoard, args=(self, (500,500), gridValues))
+    board.start()
+    #board.join()
     print 'Getting solution.. ',
     sys.stdout.flush()
-    self.__solution = self.__solve(self.__linePuzzle)
+    #self.__solution = self.__solve(self.__linePuzzle)
+    
     print 'Done' 
-    board = PyGameBoard(self, (600,400), gridValues)
-    board.setValues(gridValues)
+    
+    #board.setValues(gridValues)
     
   def __loadPuzzle(self, fileName):
     """Read in a random puzzle from the puzzle file"""
     ret = []
     numPuzzles = 1012 
-    puzzleSize = 9*9
-    seekTo = (random.randint(0, puzzleSize*numPuzzles)/82)*82 
+    puzzleSize = BOARD_SIZE*BOARD_SIZE
+    seekTo = 0#(random.randint(0, puzzleSize*numPuzzles)/82)*82 
     try:
       file = open(fileName, 'r')
     except IOError as e:
@@ -265,6 +179,7 @@ class Sudoku:
     file.close()
     for i in linePuzzle:
       ret.append(i)
+    #print ret, "len ret ="+str(len(ret))
     return ret 
 
   def gridToLine(self, grid):
@@ -275,10 +190,10 @@ class Sudoku:
     return linePuzzle
 
   def lineToGrid(self, linePuzzle):
-    assert (len(linePuzzle) == 81)
+    assert (len(linePuzzle) == BOARD_SIZE**2)
     grid = []
-    for i in xrange(0, 81, 9):
-      grid.append(linePuzzle[i:i+9])
+    for i in xrange(0, BOARD_SIZE**2, BOARD_SIZE):
+      grid.append(linePuzzle[i:i+BOARD_SIZE])
     return grid 
 
   def getSolution(self):
@@ -302,10 +217,10 @@ class Sudoku:
           return funcRet
       
   def sameRow(self, i, j): 
-    return (i/9 == j/9)
+    return (i/5 == j/5)
 
   def sameCol(self, i, j): 
-    return (i-j) % 9 == 0
+    return (i-j) % 5 == 0
   
   def sameBlock(self, i, j): 
     return (i/27 == j/27 and i%9/3 == j%9/3)
@@ -325,7 +240,7 @@ class Sudoku:
     return ret
     
 def main():
-  newGame = Sudoku('puzzles.txt')
+  newGame = Sudoku('puzzle.txt')
 
 if __name__ == '__main__':
   main()
