@@ -53,6 +53,7 @@ class PyGameBoard():
           self.__updateBoard(self.__gridValues)
       pygame.display.flip()
 
+
   def __drawUI(self):
     '''Draws the text buttons along the right panel'''
     font = pygame.font.Font(None, 38)
@@ -273,23 +274,37 @@ class Sudoku:
 
   def solve(self, linePuzzle):
     #linePuzzle = ''.join(linePuzzle)
-    answer = self.trace1(linePuzzle)
+    answer = self.slove_step1(linePuzzle)
     print answer
     return answer
-
-  def trace1 (self, linePuzzle):
+  def slove_step1(self, linePuzzle):
     for i in xrange(0, BOARD_SIZE):
       for j in xrange(0, BOARD_SIZE):
-        if linePuzzle[i][j] == '1':
+        if linePuzzle[i][j] == '1': 
+          '''first black the blank arround the no.1 island'''
           if i>0: #up
             linePuzzle[i-1][j] = '0'
-          elif i < BOARD_SIZE-1: #down
+          if i < BOARD_SIZE-1: #down
             linePuzzle[i+1][j] = '0'
-          elif j > 0: #left
+          if j > 0: #left
             linePuzzle[i][j-1] = '0'         
-          elif j < BOARD_SIZE-1: #right
+          if j < BOARD_SIZE-1: #right
             linePuzzle[i][j+1] = '0'
+        elif linePuzzle[i][j] == '-' :
+          #dectect each blank whether connect multi island
+          cnt=0
+          if i > 0 and linePuzzle[i-1][j] != '0' and linePuzzle[i-1][j] !='-':
+            cnt+=1
+          if i < BOARD_SIZE-1 and linePuzzle[i+1][j] != '0' and linePuzzle[i+1][j] != '-':
+            cnt+=1
+          
+          if cnt>1:
+            linePuzzle[i][j] = '0'
     return linePuzzle
+
+  def connectMultiIsland ():
+    
+    pass
 def main():
   newGame = Sudoku('puzzle.txt')
 
