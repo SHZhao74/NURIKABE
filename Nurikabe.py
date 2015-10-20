@@ -21,7 +21,10 @@ import random
 from multiprocessing import Process
 
 BOARD_SIZE = 5
-
+RIVER = '0'
+BLANK = '-'
+ISLAND= "132456789"
+EXTEND_ISLAND = '+'
 updateBoardEvent = pygame.event.Event(pygame.USEREVENT)
 pygame.init()
 class PyGameBoard():
@@ -55,19 +58,19 @@ class PyGameBoard():
 
   def __drawUI(self):
     '''Draws the text buttons along the right panel'''
-    font = pygame.font.Font(None, 38)
+    font = pygame.font.Font('Monaco.ttf', 38)
     font.set_underline(True)
     self.__titleText = font.render('NURIKABE', 1, (0, 0, 0))
     self.__titleTextRect = self.__titleText.get_rect()
-    self.__titleTextRect.centerx = 580
+    self.__titleTextRect.centerx = 600
     self.__titleTextRect.centery = 30
     self.__screen.blit(self.__titleText, self.__titleTextRect)
 
-    font = pygame.font.Font(None, 18)
-    self.__titleText = font.render('Shou-Hao 2015', 1, (0, 0, 0))
+    font = pygame.font.Font('Monaco.ttf', 18)
+    self.__titleText = font.render('Shou-Hao Zhao2015', 1, (0, 0, 0))
     self.__titleTextRect = self.__titleText.get_rect()
-    self.__titleTextRect.centerx = 580
-    self.__titleTextRect.centery = 55 
+    self.__titleTextRect.centerx = 600
+    self.__titleTextRect.centery = 60 
     self.__screen.blit(self.__titleText, self.__titleTextRect)
 
     font = pygame.font.Font('gunny.ttf', 30)
@@ -101,8 +104,10 @@ class PyGameBoard():
     for i in xrange(0, BOARD_SIZE):
       for j in xrange(0, BOARD_SIZE):
         self.__tiles[i][j].updateValue(gridValues[i][j])
-        if gridValues[i][j] == '0': #if it is on of River, change it into black
-          self.__tiles[i][j].toBlack()
+        if gridValues[i][j] == RIVER: #if it is one of River, change it into black
+          self.__tiles[i][j].updateColor(pygame.color.THECOLORS['black'])
+        #elif gridValues[i][j] == EXTEND_ISLAND:
+        #  self.__tiles[i][j].updateColor(pygame.color.THECOLORS['gray'])
     
 
   def __unhightlightBoard(self):
@@ -144,12 +149,12 @@ class Tile():
     self.__screen = pygame.display.get_surface()
     self.__rect = pygame.Rect(xpos, ypos, size, size)
     self.__isCorrect = True
-    if self.__value is not '-': 
+    if self.__value is not BLANK: 
       self.__readOnly = True 
     self.__draw()
   
-  def toBlack(self):
-    self.__colorSquare.fill(pygame.color.THECOLORS['black'])
+  def updateColor(self, color):
+    self.__colorSquare.fill(color)
     self.__draw()
 
   def updateValue(self, value):
@@ -189,7 +194,7 @@ class Tile():
 
   def __draw(self):
     value = self.__value
-    if self.__value == '-': 
+    if self.__value == BLANK: 
       value = ''
     font = pygame.font.Font('Monaco.ttf', 60)
     text = font.render(str(value), 1, self.__fontColor)
@@ -238,7 +243,7 @@ class Nurikabe:
     file.close()
     for i in linePuzzle:
       ret.append(i)
-    print ret
+    #print ret
     return ret 
 
   def gridToLine(self, grid):
@@ -263,7 +268,7 @@ class Nurikabe:
     assert (len(attemptLine) == 81)
     ret = []
     for i in range(81):
-      if attemptLine[i] == '-':
+      if attemptLine[i] == BLANK:
         ret.append(True) 
         continue
       if attemptLine[i] == self.__solution[i]:
@@ -275,36 +280,93 @@ class Nurikabe:
   def solve(self, linePuzzle):
     #linePuzzle = ''.join(linePuzzle)
     answer = self.slove_step1(linePuzzle)
+    #answer = self.only1WayOut(answer)
     print answer
     return answer
   def slove_step1(self, linePuzzle):
+    '''use the simplest method to detect which grid shoud be river'''
     for i in xrange(0, BOARD_SIZE):
       for j in xrange(0, BOARD_SIZE):
         if linePuzzle[i][j] == '1': 
           '''first black the blank arround the no.1 island'''
           if i>0: #up
-            linePuzzle[i-1][j] = '0'
+            linePuzzle[i-1][j] = RIVER
           if i < BOARD_SIZE-1: #down
-            linePuzzle[i+1][j] = '0'
+            linePuzzle[i+1][j] = RIVER
           if j > 0: #left
-            linePuzzle[i][j-1] = '0'         
+            linePuzzle[i][j-1] = RIVER         
           if j < BOARD_SIZE-1: #right
-            linePuzzle[i][j+1] = '0'
-        elif linePuzzle[i][j] == '-' :
-          #dectect each blank whether connect multi island
+            linePuzzle[i][j+1] = RIVER
+        elif linePuzzle[i][j] == BLANK :
+          '''dectect each blank whether connect multi island'''
           cnt=0
-          if i > 0 and linePuzzle[i-1][j] != '0' and linePuzzle[i-1][j] !='-':
+          if i > 0 and linePuzzle[i-1][j] != RIVER and linePuzzle[i-1][j] !=BLANK:
             cnt+=1
-          if i < BOARD_SIZE-1 and linePuzzle[i+1][j] != '0' and linePuzzle[i+1][j] != '-':
+          if i < BOARD_SIZE-1 and linePuzzle[i+1][j] != RIVER and linePuzzle[i+1][j] != BLANK:
+            cnt+=1
+          if j > 0 and linePuzzle[i][j-1] != RIVER and linePuzzle[i][j-1] != BLANK:
+            cnt+=1
+          if j < BOARD_SIZE-1 and  linePuzzle[i][j+1] != RIVER and  linePuzzle[i][j+1] != BLANK:
             cnt+=1
           
           if cnt>1:
-            linePuzzle[i][j] = '0'
+            linePuzzle[i][j] = RIVER
     return linePuzzle
 
-  def connectMultiIsland ():
-    
-    pass
+  def only1WayOut (self, linePuzzle):
+    '''detect if islands and river have only one direction can extend''' 
+    for i in xrange(0, BOARD_SIZE):
+      for j in xrange(0, BOARD_SIZE):
+        if linePuzzle[i][j] == RIVER:
+          cnt = 0
+          who = 0
+          if i > 0 and linePuzzle[i-1][j] ==BLANK:
+            cnt+= 1
+            who = 0
+          if i < BOARD_SIZE-1 and linePuzzle[i+1][j] == BLANK:
+            cnt+= 1
+            who = 1
+          if j > 0 and linePuzzle[i][j-1] == BLANK:
+            cnt+= 1
+            who = 2
+          if j < BOARD_SIZE-1 and linePuzzle[i][j+1] == BLANK:
+            cnt+= 1
+            who = 3          
+          if cnt==1:
+            if who ==0:
+              linePuzzle[i-1][j] = RIVER
+            elif who ==1:
+              linePuzzle[i+1][j] = RIVER
+            elif who ==2:
+              linePuzzle[i][j-1] = RIVER
+            elif who ==3:
+              linePuzzle[i][j+1] = RIVER
+
+        elif linePuzzle[i][j] in ISLAND and linePuzzle[i][j]!='1':
+          cnt = 0
+          who = 0
+          if i > 0 and linePuzzle[i-1][j] ==BLANK:
+            cnt+= 1
+            who = 0
+          if i < BOARD_SIZE-1 and linePuzzle[i+1][j] == BLANK:
+            cnt+= 1
+            who = 1
+          if j > 0 and linePuzzle[i][j-1] == BLANK:
+            cnt+= 1
+            who = 2
+          if j < BOARD_SIZE-1 and linePuzzle[i][j+1] == BLANK:
+            cnt+= 1
+            who = 3          
+          if cnt==1:
+            if who ==0:
+              linePuzzle[i-1][j] = EXTEND_ISLAND
+            elif who ==1:
+              linePuzzle[i+1][j] = EXTEND_ISLAND
+            elif who ==2:
+              linePuzzle[i][j-1] = EXTEND_ISLAND
+            elif who ==3:
+              linePuzzle[i][j+1] = EXTEND_ISLAND
+    return linePuzzle
 def main():
   newGame = Nurikabe('puzzle.txt')
 
