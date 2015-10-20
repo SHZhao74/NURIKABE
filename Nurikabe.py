@@ -41,7 +41,6 @@ class PyGameBoard():
 
   def __draw(self):
     """Handles events and updates display buffer"""
-    print "draw"
     while True:
       for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -200,7 +199,7 @@ class Tile():
     self.__screen.blit(self.__colorSquare, self.__colorSquareRect)
     self.__screen.blit(text, textpos)
 
-class Sudoku:
+class Nurikabe:
   """Represents the game's backend and logic"""
   def __init__(self, puzzleFile):
     self.__puzzleFile = puzzleFile
@@ -225,9 +224,10 @@ class Sudoku:
   def __loadPuzzle(self, fileName):
     """Read in a random puzzle from the puzzle file"""
     ret = []
-    #numPuzzles = 1012 
-    puzzleSize = BOARD_SIZE*BOARD_SIZE
-    seekTo = 0#(random.randint(0, puzzleSize*numPuzzles)/82)*82 
+    numPuzzles = 3 
+    puzzleSize = BOARD_SIZE**2
+    seekTo = (random.randint(0, numPuzzles)*(puzzleSize+1))
+    print "Puzzle No.",seekTo
     try:
       file = open(fileName, 'r')
     except IOError as e:
@@ -238,7 +238,7 @@ class Sudoku:
     file.close()
     for i in linePuzzle:
       ret.append(i)
-    #print ret
+    print ret
     return ret 
 
   def gridToLine(self, grid):
@@ -306,7 +306,7 @@ class Sudoku:
     
     pass
 def main():
-  newGame = Sudoku('puzzle.txt')
+  newGame = Nurikabe('puzzle.txt')
 
 if __name__ == '__main__':
   main()
