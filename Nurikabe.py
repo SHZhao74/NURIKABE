@@ -144,7 +144,7 @@ class PyGameBoard():
   def _loadPuzzle(self, fileName):
     """Read in a random puzzle from the puzzle file"""
     ret = []
-    numPuzzles = 5
+    numPuzzles = 10
     puzzleSize = BOARD_SIZE**2
     seekTo = (random.randint(0, numPuzzles)*(puzzleSize+2))
     #seekTo =0
@@ -305,8 +305,9 @@ class Nurikabe:
     '''use the simplest method to detect which grid shoud be river'''
     for i in xrange(0, BOARD_SIZE):
       for j in xrange(0, BOARD_SIZE):
-        if tiles[i][j] == '1': 
+        if tiles[i][j].value == '1': 
           '''first black the blank arround the no.1 island'''
+          print i,j
           if i>0: #up
             tiles[i-1][j].value = RIVER
           if i < BOARD_SIZE-1: #down
@@ -393,31 +394,7 @@ class Nurikabe:
       for j in xrange(0, BOARD_SIZE):
         cnt = 0
         who = 0
-        if self.tiles[i][j].value == RIVER:
-         
-          if i > 0 and self.tiles[i-1][j].value ==BLANK:
-            cnt+= 1
-            who = 0
-          if i < BOARD_SIZE-1 and self.tiles[i+1][j].value == BLANK:
-            cnt+= 1
-            who = 1
-          if j > 0 and self.tiles[i][j-1].value == BLANK:
-            cnt+= 1
-            who = 2
-          if j < BOARD_SIZE-1 and self.tiles[i][j+1].value == BLANK:
-            cnt+= 1
-            who = 3          
-          if cnt==1:
-            if who ==0:
-              linePuzzle[i-1][j].value = RIVER
-            elif who ==1:
-              linePuzzle[i+1][j].value = RIVER
-            elif who ==2:
-              linePuzzle[i][j-1].value = RIVER
-            elif who ==3:
-              linePuzzle[i][j+1].value = RIVER
-          
-        elif self.tiles[i][j].value in ISLAND and self.tiles[i][j].value is not '1' or self.tiles[i][j].value is SUB_ISLAND:
+        if self.tiles[i][j].value in ISLAND and self.tiles[i][j].value is not '1' or self.tiles[i][j].value is SUB_ISLAND:
           print "tiles[%d][%d]= %s, %d" % (i,j,self.tiles[i][j].value, self.tiles[i][j].left_sub_island)
           if i > 0            and self.tiles[i-1][j].value == BLANK:
             cnt+= 1
@@ -461,6 +438,31 @@ class Nurikabe:
                 self.tiles[i][j].sub_islands = (i,j+1) 
                 linePuzzle[i][j+1].value = SUB_ISLAND
                 linePuzzle[i][j+1].left_sub_island = self.tiles[i][j].left_sub_island-1
+        elif self.tiles[i][j].value == RIVER:
+         
+          if i > 0 and self.tiles[i-1][j].value ==BLANK:
+            cnt+= 1
+            who = 0
+          if i < BOARD_SIZE-1 and self.tiles[i+1][j].value == BLANK:
+            cnt+= 1
+            who = 1
+          if j > 0 and self.tiles[i][j-1].value == BLANK:
+            cnt+= 1
+            who = 2
+          if j < BOARD_SIZE-1 and self.tiles[i][j+1].value == BLANK:
+            cnt+= 1
+            who = 3          
+          if cnt==1:
+            if who ==0:
+              linePuzzle[i-1][j].value = RIVER
+            elif who ==1:
+              linePuzzle[i+1][j].value = RIVER
+            elif who ==2:
+              linePuzzle[i][j-1].value = RIVER
+            elif who ==3:
+              linePuzzle[i][j+1].value = RIVER
+          
+        
     
     
     for i in xrange(0, BOARD_SIZE):
@@ -477,7 +479,7 @@ class Nurikabe:
     for i in xrange(0, BOARD_SIZE):
       for j in xrange(0, BOARD_SIZE):
         if linePuzzle[i][j].value != self.tiles[i][j].value:#if two list are not equal 
-          raw_input("ready to Recursive")
+          #raw_input("ready to Recursive")
           for i in xrange(0, BOARD_SIZE):
             for j in xrange(0, BOARD_SIZE):  #pygame.Surface doesn't like deepcopy, thus, i only assign value one by one...
               self.tiles[i][j].value = linePuzzle[i][j].value
