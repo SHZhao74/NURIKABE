@@ -126,6 +126,7 @@ class PyGameBoard():
   def _startNewGame(self):
 
     self._linePuzzle = self._loadPuzzle(self._puzzleFile)
+    print 'MAX=',self.Max
     self._gridValues = self.lineToGrid(self._linePuzzle)
     self.tiles = self.__createTiles(12,12)
     self.__drawUI()
@@ -144,7 +145,7 @@ class PyGameBoard():
   def _loadPuzzle(self, fileName):
     """Read in a random puzzle from the puzzle file"""
     ret = []
-    numPuzzles = 10
+    numPuzzles = 9
     puzzleSize = BOARD_SIZE**2
     seekTo = (random.randint(0, numPuzzles)*(puzzleSize+2))
     #seekTo =0
@@ -157,8 +158,12 @@ class PyGameBoard():
     file.seek(seekTo)
     linePuzzle = file.readline().strip()
     file.close()
+
+    self.Max = 0
     for i in linePuzzle:
       ret.append(i)
+      if i in ISLAND and self.Max < int(i):
+        self.Max = int(i)
     #print ret
     return ret
   
@@ -276,6 +281,7 @@ class Nurikabe:
   """Represents the game's backend and logic"""
   def __init__(self, tiles):
     self.tiles = self.slove_step1(tiles)
+    self.tiles = self.neverTouch()
     self.tiles = self.only1WayOut()
     #print tiles[1][0].value
     #return tiles
@@ -307,7 +313,7 @@ class Nurikabe:
       for j in xrange(0, BOARD_SIZE):
         if tiles[i][j].value == '1': 
           '''first black the blank arround the no.1 island'''
-          print i,j
+          #print i,j
           if i>0: #up
             tiles[i-1][j].value = RIVER
           if i < BOARD_SIZE-1: #down
@@ -386,6 +392,45 @@ class Nurikabe:
       return self.island1way(ori_puzzle, i, j)
     else: 
       return ori_puzzle
+
+  def neverTouch(self):
+    '''detect some blank will never be sub_islands ,so it must be a RIVER
+    e.g. no ISLAND can extend to the blank
+    . . . 1 . . .
+    . . 1 1 1 . .
+    . 1 1 1 1 1 .
+    1 1 1 4 1 1 1
+    . 1 1 1 1 1 .
+    . . 1 1 1 . .
+    . . . 1 . . .
+
+    '''
+    tmpBoard =[]
+    for i in xrange(0,BOARD_SIZE):
+      raw = []
+      for j in xrange(0,BOARD_SIZE):
+        raw.append(0)
+      tmpBoard.append(raw)
+
+    for i in xrange(0, BOARD_SIZE):
+      for j in xrange(0, BOARD_SIZE):
+        if self.tiles[i][j].value in ISLAND:
+          value = int(self.tiles[i][j].value)
+          for x in xrange(1,value): #upper part
+            skip = abs(x-value)
+            for y in xrange(1,x*2-1):
+              if isInTheBoard(i-(value-x), j-(value-1)+skip):
+                tmpBoard[i-(value-x)][j-(value-1)+skip]+=1
+          for x in xrange(value,value*2-1): #lower part
+            skip = abs(x-value)
+            for y in xrange(1,x*2-1):
+              if isInTheBoard(i-(value-x), j-(value-1)+skip):
+                tmpBoard[i-(value-x)][j-(value-1)+skip]+=1
+          for i in xrange(0, BOARD_SIZE):
+            print tmpBoard[i]
+          raw_input()
+
+
   def only1WayOut (self):
     '''detect if islands and river which can only extend one direction '''
     linePuzzle = copy.deepcopy(self.tiles) #use this syntax can clone datas to a new list, not just copy reference
@@ -488,7 +533,10 @@ class Nurikabe:
     #two list are equal. it means can do no more 
     return self.tiles
 
-
+def isInTheBoard (i,j):
+  if i < 0 or i >= BOARD_SIZE or j < 0 or j>= BOARD_SIZE:
+    return False
+  return True
 def main():
   newGame = PyGameBoard('puzzle.txt')
 
