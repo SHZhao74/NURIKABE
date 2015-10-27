@@ -147,7 +147,7 @@ class PyGameBoard():
     ret = []
     numPuzzles = 9
     puzzleSize = BOARD_SIZE**2
-    seekTo = (random.randint(0, numPuzzles)*(puzzleSize+2))
+    seekTo = (random.randint(0, numPuzzles)*(puzzleSize+1))
     #seekTo =0
     print "Puzzle No.",seekTo
     try:
@@ -224,8 +224,8 @@ class PyGameBoard():
       #pygame.event.post(updateBoardEvent)
       print 'Done'
       self.__updateBoard()
-      #self.__unhightlightBoard()
   def printTiles(self):
+    print 'Final answer:'
     for i in xrange(0,BOARD_SIZE):
       for j in xrange(0,BOARD_SIZE):
         print self.tiles[i][j].value,
@@ -282,9 +282,9 @@ class Nurikabe:
   def __init__(self, tiles):
     self.tiles = self.slove_step1(tiles)
     self.tiles = self.neverTouch()
-    self.tiles = self.only1WayOut()
+    #self.tiles = self.only1WayOut()
     #print tiles[1][0].value
-    #return tiles
+	#return self.tiles
   
   def getSolution(self):
     return self.__solution
@@ -415,21 +415,31 @@ class Nurikabe:
     for i in xrange(0, BOARD_SIZE):
       for j in xrange(0, BOARD_SIZE):
         if self.tiles[i][j].value in ISLAND:
+          print i, j
           value = int(self.tiles[i][j].value)
-          for x in xrange(1,value): #upper part
+          for x in xrange(1,value+1): #upper part
             skip = abs(x-value)
-            for y in xrange(1,x*2-1):
-              if isInTheBoard(i-(value-x), j-(value-1)+skip):
-                tmpBoard[i-(value-x)][j-(value-1)+skip]+=1
-          for x in xrange(value,value*2-1): #lower part
-            skip = abs(x-value)
-            for y in xrange(1,x*2-1):
-              if isInTheBoard(i-(value-x), j-(value-1)+skip):
-                tmpBoard[i-(value-x)][j-(value-1)+skip]+=1
-          for i in xrange(0, BOARD_SIZE):
-            print tmpBoard[i]
-          raw_input()
+            for y in xrange(0,x*2-1):#TODO:y+=2
+              if isInTheBoard(i-(value-x), j-(value-1)+skip+y):
+                tmpBoard[i-(value-x)][j-(value-1)+skip+y]+=1
 
+          loop = range((value)*2-1, 0, -2)
+          for x in xrange(value+1,value*2): #lower part
+            skip = abs(x-value)
+            for y in xrange(0,loop[skip]):
+              if isInTheBoard(i-(value-x), j-(value-1)+skip+y):
+                tmpBoard[i-(value-x)][j-(value-1)+skip+y]+=1
+      
+    #for i in xrange(0, BOARD_SIZE):
+    #  print tmpBoard[i]    
+          
+
+    for i in xrange(0, BOARD_SIZE):
+      for j in xrange(0, BOARD_SIZE):
+        if tmpBoard[i][j] is 0:
+          self.tiles[i][j].value = RIVER
+
+    return self.tiles
 
   def only1WayOut (self):
     '''detect if islands and river which can only extend one direction '''
