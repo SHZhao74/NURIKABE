@@ -126,7 +126,7 @@ class PyGameBoard():
   def _startNewGame(self):
 
     self._linePuzzle = self._loadPuzzle(self._puzzleFile)
-    print 'MAX=',self.Max
+    print 'max_island_num=',self.max_island_num, 'island_num=', self.island_num
     self._gridValues = self.lineToGrid(self._linePuzzle)
     self.tiles = self.__createTiles(12,12)
     self.__drawUI()
@@ -149,7 +149,7 @@ class PyGameBoard():
     puzzleSize = BOARD_SIZE**2
     seekTo = (random.randint(0, numPuzzles)*(puzzleSize+1))
     #seekTo =0
-    print "Puzzle No.",seekTo
+    print "Puzzle No.",seekTo/(puzzleSize+1)
     try:
       file = open(fileName, 'r')
     except IOError as e:
@@ -159,11 +159,13 @@ class PyGameBoard():
     linePuzzle = file.readline().strip()
     file.close()
 
-    self.Max = 0
+    self.island_num = 0     #how many grods have been tagged as island or sub island
+    self.max_island_num = 0 #how many grids should be island or sub island
     for i in linePuzzle:
       ret.append(i)
-      if i in ISLAND and self.Max < int(i):
-        self.Max = int(i)
+      if i in ISLAND:
+        self.max_island_num += int(i)
+        self.island_num+=1
     #print ret
     return ret
   
@@ -282,7 +284,7 @@ class Nurikabe:
   def __init__(self, tiles):
     self.tiles = self.slove_step1(tiles)
     self.tiles = self.neverTouch()
-    #self.tiles = self.only1WayOut()
+    self.tiles = self.only1WayOut()
     #print tiles[1][0].value
 	#return self.tiles
   
@@ -337,6 +339,50 @@ class Nurikabe:
           if cnt>1:
             tiles[i][j].value = RIVER
     return tiles
+
+  def neverTouch(self):
+    '''detect some blank will never be sub_islands ,so it must be a RIVER
+    e.g. no ISLAND can extend to the blank
+    . . . 1 . . .
+    . . 1 1 1 . .
+    . 1 1 1 1 1 .
+    1 1 1 4 1 1 1
+    . 1 1 1 1 1 .
+    . . 1 1 1 . .
+    . . . 1 . . .
+
+    '''
+    tmpBoard =[]
+    for i in xrange(0,BOARD_SIZE):
+      raw = []
+      for j in xrange(0,BOARD_SIZE):
+        raw.append(0)
+      tmpBoard.append(raw)
+
+    for i in xrange(0, BOARD_SIZE):
+      for j in xrange(0, BOARD_SIZE):
+        if self.tiles[i][j].value in ISLAND:
+          print i, j
+          value = int(self.tiles[i][j].value)
+          for x in xrange(1,value+1): #upper part
+            skip = abs(x-value)
+            for y in xrange(0,x*2-1):
+              if isInTheBoard(i-(value-x), j-(value-1)+skip+y):
+                tmpBoard[i-(value-x)][j-(value-1)+skip+y]+=1
+
+          loop = range((value)*2-1, 0, -2)
+          for x in xrange(value+1,value*2): #lower part
+            skip = abs(x-value)
+            for y in xrange(0,loop[skip]):
+              if isInTheBoard(i-(value-x), j-(value-1)+skip+y):
+                tmpBoard[i-(value-x)][j-(value-1)+skip+y]+=1   
+
+    for i in xrange(0, BOARD_SIZE):
+      for j in xrange(0, BOARD_SIZE):
+        if tmpBoard[i][j] is 0:
+          self.tiles[i][j].value = RIVER
+
+    return self.tiles
 
   def is_island_finish(self, i, j):
     '''detect if a island has been completely extended'''
@@ -393,53 +439,7 @@ class Nurikabe:
     else: 
       return ori_puzzle
 
-  def neverTouch(self):
-    '''detect some blank will never be sub_islands ,so it must be a RIVER
-    e.g. no ISLAND can extend to the blank
-    . . . 1 . . .
-    . . 1 1 1 . .
-    . 1 1 1 1 1 .
-    1 1 1 4 1 1 1
-    . 1 1 1 1 1 .
-    . . 1 1 1 . .
-    . . . 1 . . .
-
-    '''
-    tmpBoard =[]
-    for i in xrange(0,BOARD_SIZE):
-      raw = []
-      for j in xrange(0,BOARD_SIZE):
-        raw.append(0)
-      tmpBoard.append(raw)
-
-    for i in xrange(0, BOARD_SIZE):
-      for j in xrange(0, BOARD_SIZE):
-        if self.tiles[i][j].value in ISLAND:
-          print i, j
-          value = int(self.tiles[i][j].value)
-          for x in xrange(1,value+1): #upper part
-            skip = abs(x-value)
-            for y in xrange(0,x*2-1):#TODO:y+=2
-              if isInTheBoard(i-(value-x), j-(value-1)+skip+y):
-                tmpBoard[i-(value-x)][j-(value-1)+skip+y]+=1
-
-          loop = range((value)*2-1, 0, -2)
-          for x in xrange(value+1,value*2): #lower part
-            skip = abs(x-value)
-            for y in xrange(0,loop[skip]):
-              if isInTheBoard(i-(value-x), j-(value-1)+skip+y):
-                tmpBoard[i-(value-x)][j-(value-1)+skip+y]+=1
-      
-    #for i in xrange(0, BOARD_SIZE):
-    #  print tmpBoard[i]    
-          
-
-    for i in xrange(0, BOARD_SIZE):
-      for j in xrange(0, BOARD_SIZE):
-        if tmpBoard[i][j] is 0:
-          self.tiles[i][j].value = RIVER
-
-    return self.tiles
+  
 
   def only1WayOut (self):
     '''detect if islands and river which can only extend one direction '''
