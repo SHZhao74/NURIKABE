@@ -12,6 +12,7 @@ BLANK = '-'
 ISLAND= "123456789ABCDE"
 SUB_ISLAND = '+'
 dic = {'A':10,'B':11,'C':12,'D':13,'E':14}
+CNT=0
 
 class Grid():
   def __init__(self, val):
@@ -30,9 +31,10 @@ class Nurikabe():
     #pygame.init()
     self._puzzleFile = puzzleFile
     self._startNewGame()
+    
   
   def _startNewGame(self):
-
+    self.cnt =0
     self._linePuzzle = self._loadPuzzle(self._puzzleFile)
     #print 'max_island_num=',self.max_island_num, 'island_num=', self.island_num
     self._gridValues = self.lineToGrid(self._linePuzzle)
@@ -48,7 +50,7 @@ class Nurikabe():
     ret = []
     
     seekTo = (random.randint(0, numPuzzles)*(puzzleSize+1))
-    #seekTo = 104
+    seekTo = 52
     print "Puzzle No.",seekTo/(puzzleSize+1)+1
     try:
       file = open(fileName, 'r')
@@ -375,8 +377,10 @@ class Nurikabe():
   def DFS(self,boards,num):
     '''comput all possible extending of islands and try and error'''
     #print 'num=',num
+    self.cnt+=1
     tmp_b, tmp_n = self.extendAll(boards,num)
     if len(tmp_n) is 0:#leaf node
+      print self.cnt
       #print 'leaf node:'
       #display(boards)
       if self.checkSolution(boards,num):
